@@ -30,6 +30,7 @@ FORCE_SWAP = 8          # тактов в тупике, после которы�
 REPATH_AT = (4, 12, 30)  # на этих тактах тупика - путь в обход юнитов рядом
 GIVE_UP = 80            # тактов без шага: приказ «идти» снимается (дошли, насколько можно)
 GIVE_UP_GROUP = 40      # то же для группы у цели: толпа плотная, ближе не протиснуться
+FIELD_REFRESH = 30      # устаревшее потоковое поле живёт столько тактов
 REPATH_MOVING = 5       # погоня: путь к движущейся цели пересчитывается не чаще
 
 
@@ -125,6 +126,7 @@ class Game:
         self.players = [Player(i, start_resources) for i in range(max(2, len(gmap.starts)))]
         self.static_version = 0
         self._fields = {}
+        self.adj = pathing.build_adj(self.w, self.h, self.blocked)
         self._ids = (seed * 2654435761 + 0x9E3779B9) & 0xFFFFFFFF or 1
         self.fog = Fog(self.w, self.h, len(self.players), enabled=fog)
         self.events = []       # (такт, вид, ...) для окна и «Мыслей ИИ»; в хэш не входит
@@ -181,25 +183,35 @@ class Game:
                 i = yy * self.w + xx
                 self.bld_at[i] = b.id
                 self.blocked[i] = 1
-        self._static_changed()
+        self._static_changed([(xx, yy) for yy in range(y, y + b.size) for xx in range(x, x + b.size)])
         return b
 
     def _finish_building(self, b):
         b.built = 0          # урон, полученный при стройке, остаётся: hp рос по ходу работы
         self.events.append((self.tick, "built", b.id))
 
-    def _static_changed(self):
+    def _static_changed(self, cells):
         self.static_version += 1
-        self._fields.clear()
+        pathing.update_adj(self.adj, self.w, self.h, self.blocked, cells)
 
-    def field(self, target):
-        """Потоковое поле к клетке target: одно на всю группу, до изменения карты."""
-        f = self._fields.get(target)
-        if f is None:
-            if len(self._fields) > 32:
-                self._fields.clear()
-            f = pathing.flow_field(self.w, self.h, self.blocked, [target])
-            self._fields[target] = f
+    def field(self, owner, target):
+        """Потоковое поле к клетке target: одно на все группы игрока с этой целью.
+
+        После изменения карты поле не выбрасывается сразу: новые здания и стены всё равно
+        не пройти (can_step), а освободившиеся клетки поле просто не знает. Устаревшее поле
+        пересчитывается не чаще раза в FIELD_REFRESH тактов - кристаллы кончаются часто, а
+        поле на 48x48 стоит миллисекунды. Кэш у каждого игрока свой: движение его юнитов
+        не зависит от того, куда враг посылал своих."""
+        key = (owner, target)
+        entry = self._fields.get(key)
+        if entry is not None:
+            version, made, f = entry
+            if version == self.static_version or self.tick - made < FIELD_REFRESH:
+                return f
+        if entry is None and len(self._fields) >= 64:
+            self._fields.clear()
+        f = pathing.FlowField(self.adj, self.w, self.h, self.blocked, target)
+        self._fields[key] = (self.static_version, self.tick, f)
         return f
 
     def footprint_free(self, kind, x, y):
@@ -398,7 +410,8 @@ class Game:
                         i = yy * self.w + xx
                         self.bld_at[i] = 0
                         self.blocked[i] = 0
-                self._static_changed()
+                self._static_changed([(xx, yy) for yy in range(e.y, e.y + e.size)
+                                      for xx in range(e.x, e.x + e.size)])
                 pl.stats["buildings_lost"] += 1   # очередь сгорает без возврата цены
             else:
                 self.unit_at[e.y * self.w + e.x] = 0
@@ -619,7 +632,7 @@ class Game:
         else:
             del self.crystals[pos]
             self.blocked[pos[1] * self.w + pos[0]] = 0
-            self._static_changed()
+            self._static_changed([pos])
 
     def _deliver(self, u):
         b = self._nearest_base(u)
@@ -726,10 +739,11 @@ class Game:
         return self._advance_rect(u, (pos[0], pos[1], pos[0], pos[1]), 0)
 
     def _advance_field(self, u, pos, n):
-        f = self.field(pos)
+        ff = self.field(u.owner, pos)
         w = self.w
         cur = u.y * w + u.x
-        d = f[cur]
+        d = ff.value(cur)
+        f = ff.dist
         if d >= pathing.INF:
             return self._advance_rect(u, (pos[0], pos[1], pos[0], pos[1]), 0)
         if d <= 14 * arrival_radius(n):
@@ -752,7 +766,8 @@ class Game:
             self._move(u, free[1], free[2])
             return "moving"
         if best is None:
-            return "arrived"
+            # яма устаревшего поля (новое здание перекрыло спуск) - дальше по A*
+            return self._advance_rect(u, (pos[0], pos[1], pos[0], pos[1]), 0)
         if self._swap_or_wait(u, best[1], best[2]):
             return "moving"
         if u.blocked >= GIVE_UP_GROUP:

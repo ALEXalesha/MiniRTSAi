@@ -158,3 +158,134 @@ def path_cost(path, start):
         total += 14 if (nx != x and ny != y) else 10
         x, y = nx, ny
     return total
+
+
+# ----- соседи заранее: карта меняется редко (здание, кончился кристалл), а поля и пути
+# считаются часто. Список соседей клетки - пары (индекс, цена), уже с правилом углов.
+
+def _cell_adj(w, h, blocked, x, y):
+    i = y * w + x
+    if blocked[i]:
+        return ()
+    out = []
+    for dx, dy in DIRS:
+        nx, ny = x + dx, y + dy
+        if not (0 <= nx < w and 0 <= ny < h):
+            continue
+        n = ny * w + nx
+        if blocked[n]:
+            continue
+        if dx and dy and (blocked[y * w + nx] or blocked[ny * w + x]):
+            continue
+        out.append((n, 14 if dx and dy else 10))
+    return tuple(out)
+
+
+def build_adj(w, h, blocked):
+    return [_cell_adj(w, h, blocked, i % w, i // w) for i in range(w * h)]
+
+
+def update_adj(adj, w, h, blocked, cells):
+    """Клетки cells стали занятыми или свободными: пересчитать соседей в квадрате 3x3 вокруг
+    каждой (диагональ между соседями клетки зависит от неё по правилу углов)."""
+    done = set()
+    for (x, y) in cells:
+        for yy in range(max(0, y - 1), min(h, y + 2)):
+            for xx in range(max(0, x - 1), min(w, x + 2)):
+                i = yy * w + xx
+                if i not in done:
+                    done.add(i)
+                    adj[i] = _cell_adj(w, h, blocked, xx, yy)
+
+
+def flow_field_adj(adj, w, h, blocked, targets):
+    """То же, что flow_field, но по готовому списку соседей (в разы быстрее)."""
+    dist = [INF] * (w * h)
+    heap = []
+    for (x, y) in targets:
+        i = y * w + x
+        if not dist[i]:
+            continue
+        dist[i] = 0
+        if blocked[i]:
+            # цель в стене: шаги из соседних свободных клеток в неё, углы - как обычно
+            for dx, dy in DIRS:
+                nx, ny = x + dx, y + dy
+                if not (0 <= nx < w and 0 <= ny < h):
+                    continue
+                n = ny * w + nx
+                if blocked[n] or (dx and dy and (blocked[y * w + nx] or blocked[ny * w + x])):
+                    continue
+                c = 14 if dx and dy else 10
+                if c < dist[n]:
+                    dist[n] = c
+                    heap.append((c, n))
+        else:
+            heap.append((0, i))
+    heapq.heapify(heap)
+    pop, push = heapq.heappop, heapq.heappush
+    while heap:
+        d, cur = pop(heap)
+        if d > dist[cur]:
+            continue
+        for n, c in adj[cur]:
+            nd = d + c
+            if nd < dist[n]:
+                dist[n] = nd
+                push(heap, (nd, n))
+    return dist
+
+
+class FlowField:
+    """Потоковое поле, которое считается по мере надобности: Дейкстра от цели
+    останавливается, как только нужная клетка получила окончательное расстояние, и
+    продолжается, когда спросят дальнюю. Группе рядом с целью хватает нескольких десятков
+    клеток вместо всей карты. Расстояния те же, что у flow_field_adj: соседи с меньшим
+    расстоянием, чем у окончательной клетки, тоже окончательные (Дейкстра снимает их раньше).
+    """
+    __slots__ = ("adj", "dist", "done", "heap")
+
+    def __init__(self, adj, w, h, blocked, target):
+        self.adj = adj
+        n = w * h
+        self.dist = [INF] * n
+        self.done = bytearray(n)
+        x, y = target
+        i = y * w + x
+        self.dist[i] = 0
+        self.done[i] = 1
+        self.heap = []
+        if blocked[i]:
+            for dx, dy in DIRS:
+                nx, ny = x + dx, y + dy
+                if not (0 <= nx < w and 0 <= ny < h):
+                    continue
+                j = ny * w + nx
+                if blocked[j] or (dx and dy and (blocked[y * w + nx] or blocked[ny * w + x])):
+                    continue
+                c = 14 if dx and dy else 10
+                if c < self.dist[j]:
+                    self.dist[j] = c
+                    self.heap.append((c, j))
+            heapq.heapify(self.heap)
+        else:
+            self._relax(i, 0)
+
+    def _relax(self, cur, d):
+        dist, heap = self.dist, self.heap
+        for n, c in self.adj[cur]:
+            nd = d + c
+            if nd < dist[n]:
+                dist[n] = nd
+                heapq.heappush(heap, (nd, n))
+
+    def value(self, i):
+        """Окончательное расстояние клетки i (INF - недостижима)."""
+        done, dist, heap = self.done, self.dist, self.heap
+        while not done[i] and heap:
+            d, cur = heapq.heappop(heap)
+            if done[cur] or d > dist[cur]:
+                continue
+            done[cur] = 1
+            self._relax(cur, d)
+        return dist[i] if done[i] else INF
