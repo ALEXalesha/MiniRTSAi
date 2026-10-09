@@ -600,6 +600,14 @@ class Game:
             self._deliver(u)
             return
         pos = u.o_pos
+        if pos not in self.crystals and not self.fog.sees(u.owner, *pos):
+            # хозяин помнит кристалл, но не видит клетку: рабочий идёт проверить. Встать
+            # сразу значило бы выдать, что кристалл в тумане уже выбран.
+            if u.carry:
+                self._deliver(u)
+            elif self._advance_rect(u, (pos[0], pos[1], pos[0], pos[1]), rules.MELEE_R2) != "moving":
+                self._set_order(u, "idle")
+            return
         if pos not in self.crystals:
             nxt = self._crystal_near(u, pos)
             if nxt is None:

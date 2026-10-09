@@ -302,7 +302,7 @@ def test_building_placed_on_the_route_does_not_strand_the_group():
     """Устаревшее потоковое поле: здание встало поперёк пути, юниты всё равно доходят."""
     rows = ["." * 20] * 12
     g = world(rows)
-    grp = put(g, [(0, y) for y in range(4, 8)])
+    grp = put(g, [(5, y) for y in range(4, 8)])     # до стены 2-3 шага: поле ещё старое
     g.apply_command(C.move(0, [u.id for u in grp], (19, 6)))
     for _ in range(3):
         g.step()
