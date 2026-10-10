@@ -46,7 +46,7 @@ DAMAGE = {
     "worker":    {"worker": 3,  "swordsman": 2,  "archer": 3,  "building": 2},
     "swordsman": {"worker": 12, "swordsman": 10, "archer": 18, "building": 9},
     "archer":    {"worker": 8,  "swordsman": 7,  "archer": 6,  "building": 3},
-    "tower":     {"worker": 10, "swordsman": 8,  "archer": 14, "building": 0},
+    "tower":     {"worker": 10, "swordsman": 14, "archer": 14, "building": 0},
 }
 
 COMBAT = ("swordsman", "archer")

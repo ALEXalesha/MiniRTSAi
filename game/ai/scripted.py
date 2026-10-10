@@ -18,16 +18,41 @@ from game.ai.match import Controller
 
 BASE = rules.BUILDINGS["base"]["size"]
 
-PRESETS = {
-    # рабочих, казарм, башен, доля лучников, армия для атаки, отход при армии меньше,
-    # с какой армии строить башни, разведка (такт, 0 - нет)
-    "rush":    dict(workers=5,  barracks=1, towers=0, archers=0.25, attack_at=4,
-                    retreat_at=1, tower_after=99, scout_at=0),
-    "defense": dict(workers=8,  barracks=1, towers=2, archers=0.6,  attack_at=12,
-                    retreat_at=5, tower_after=0, scout_at=600),
-    "economy": dict(workers=12, barracks=2, towers=1, archers=0.5,  attack_at=14,
-                    retreat_at=6, tower_after=4, scout_at=900),
+# Числа стратегии. Границы - для эволюции в лиге (game/train/league.py): параметры там
+# живут непрерывными и округляются здесь.
+SPACE = {
+    "workers":    (3, 20, int),     # рабочих всего
+    "barracks_at": (2, 16, int),    # с какого числа рабочих первая казарма
+    "barracks":   (1, 3, int),      # казарм всего
+    "towers":     (0, 4, int),      # башен всего
+    "tower_at":   (3, 20, int),     # с какого числа рабочих башни
+    "archers":    (0.0, 1.0, float),  # доля лучников в армии
+    "attack_at":  (2, 24, int),     # армия, с которой идём в атаку
+    "retreat_at": (0, 12, int),     # армия, при которой атака сворачивается
+    "scout_at":   (0, 1500, int),   # такт разведки рабочим, 0 - без неё
 }
+
+PRESETS = {
+    # раш: казарма сразу, мечники, атака малой группой и без отхода
+    "rush":    dict(workers=4, barracks_at=4, barracks=1, towers=0, tower_at=99, archers=0.0,
+                    attack_at=2, retreat_at=0, scout_at=0),
+    # оборона: башни до казармы, лучники за башнями, поздний удар большой армией
+    "defense": dict(workers=7, barracks_at=5, barracks=1, towers=2, tower_at=4, archers=0.7,
+                    attack_at=16, retreat_at=6, scout_at=600),
+    # экономика: много рабочих, армия поздно, но из двух казарм
+    "economy": dict(workers=16, barracks_at=14, barracks=2, towers=0, tower_at=99, archers=0.5,
+                    attack_at=12, retreat_at=5, scout_at=900),
+}
+
+
+def clip_params(raw):
+    """Числа из эволюции -> допустимые параметры: в границах, целые где надо."""
+    out = {}
+    for k, (lo, hi, kind) in SPACE.items():
+        v = min(hi, max(lo, raw[k]))
+        out[k] = int(round(v)) if kind is int else float(v)
+    return out
+
 
 PLAN_RU = {"economy": "развиваю экономику", "army": "коплю армию", "attack": "атакую",
            "defend": "защищаю базу", "retreat": "отступаю"}
@@ -38,11 +63,11 @@ def d2(a, b):
 
 
 class ScriptedBot(Controller):
-    def __init__(self, character="rush", **overrides):
-        self.character = character
-        self.params = dict(PRESETS[character])
+    def __init__(self, character="rush", params=None, **overrides):
+        self.character = character if params is None else "custom"
+        self.params = dict(PRESETS[character]) if params is None else clip_params(params)
         self.params.update(overrides)
-        self.name = character
+        self.name = self.character
 
     def reset(self, player, seed):
         super().reset(player, seed)
@@ -161,14 +186,22 @@ class ScriptedBot(Controller):
         # 3. стройка: одна закладка за раз
         building_now = any(u.order == "build" for u in workers)
         want = None
-        enough_workers = len(workers) >= min(P["workers"], 4)
-        if not building_now and enough_workers and workers:
-            if len(barracks) < P["barracks"]:
-                want = "barracks"
-            elif len(towers) < P["towers"] and len(army) >= P["tower_after"]:
+        nw = len(workers)
+        if not building_now and workers:
+            if len(towers) < P["towers"] and nw >= P["tower_at"]:
                 want = "tower"
+            elif not barracks and nw >= P["barracks_at"]:
+                want = "barracks"
+            elif barracks and len(barracks) < P["barracks"] and nw >= P["barracks_at"]:
+                want = "barracks"
         if want and money >= rules.BUILDINGS[want]["cost"]:
-            site = self._sites(obs, want, base, self.enemy_start)
+            near = base
+            if want == "tower" and near_crystals:
+                # башня прикрывает добычу: между базой и кристаллами
+                cx = sum(c[0][0] for c in near_crystals) // len(near_crystals)
+                cy = sum(c[0][1] for c in near_crystals) // len(near_crystals)
+                near = ((base[0] + cx) // 2, (base[1] + cy) // 2)
+            site = self._sites(obs, want, near, self.enemy_start)
             if site is not None:
                 builder = min(workers, key=lambda u: (u.carry > 0, d2((u.x, u.y), site), u.id))
                 out.append(C.build(p, [builder.id], want, site))
@@ -201,7 +234,9 @@ class ScriptedBot(Controller):
         # денег нет и взять негде: копить больше нечего, армия идёт в бой
         broke = ((not obs.crystals or not workers)
                  and money < min(u["cost"] for u in rules.UNITS.values()))
-        threats = [e for e in obs.enemy_units if d2((e.x, e.y), base) <= 12 ** 2]
+        # угроза - бойцы врага у базы; рабочий-разведчик армию домой не разворачивает
+        threats = [e for e in obs.enemy_units
+                   if e.kind in rules.COMBAT and d2((e.x, e.y), base) <= 12 ** 2]
         known = [b for b in obs.enemy_buildings]
         if broke and not army and workers and not obs.crystals:
             # карта выработана, армии нет: рабочие - последняя сила
