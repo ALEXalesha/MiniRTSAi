@@ -47,7 +47,8 @@ class Recorder:
         return {"format": FORMAT, "map": self.map_json, "config": self.config,
                 "commands": self.commands,
                 "hashes": {str(k): v for k, v in sorted(self.hashes.items())},
-                "result": {"tick": g.tick, "over": g.over, "winner": g.winner},
+                "result": {"tick": g.tick, "over": g.over, "winner": g.winner,
+                           "reason": g.end_reason},
                 "meta": self.meta}
 
     def save(self, path):

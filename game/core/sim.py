@@ -118,6 +118,7 @@ class Game:
         self.tick = 0
         self.over = False
         self.winner = None
+        self.end_reason = None     # destroyed, points_buildings, points_army, draw
         self.crystals = dict(gmap.crystals)
         self.blocked = passable_cells(gmap)          # стены, кристаллы, здания
         self.unit_at = [0] * (self.w * self.h)
@@ -429,9 +430,30 @@ class Game:
         if sum(alive) <= 1:
             self.over = True
             self.winner = alive.index(True) if any(alive) else None
+            self.end_reason = "destroyed" if any(alive) else "draw"
         elif self.tick >= self.max_ticks:
+            # время вышло: победа по очкам (решение Алексея 10.10.2026)
             self.over = True
-            self.winner = None
+            self.winner, self.end_reason = self.points_winner()
+
+    def points(self, owner):
+        """Очки на случай конца времени: (цена уцелевших зданий, цена армии). Здание считается
+        по полной цене, даже недостроенное: деньги за него уже отданы. Армия - мечники и
+        лучники, рабочие не в счёт."""
+        bld = sum(rules.BUILDINGS[e.kind]["cost"] for e in self.ents.values()
+                  if e.owner == owner and e.building)
+        army = sum(rules.UNITS[e.kind]["cost"] for e in self.ents.values()
+                   if e.owner == owner and not e.building and e.kind in rules.COMBAT)
+        return bld, army
+
+    def points_winner(self):
+        """(победитель или None, причина): сначала здания, при равенстве - армия, иначе ничья."""
+        a, b = self.points(0), self.points(1)
+        if a[0] != b[0]:
+            return (0 if a[0] > b[0] else 1), "points_buildings"
+        if a[1] != b[1]:
+            return (0 if a[1] > b[1] else 1), "points_army"
+        return None, "draw"
 
     # ----- здания -----
 
@@ -896,7 +918,7 @@ class Game:
 
     def state_key(self):
         ents = tuple(self.ents[k].key() for k in sorted(self.ents))
-        return (self.tick, self.over, self.winner, self._ids, self.static_version,
+        return (self.tick, self.over, self.winner, self.end_reason, self._ids, self.static_version,
                 tuple(p.key() for p in self.players), ents,
                 tuple(sorted(self.crystals.items())), bytes(self.blocked), self.fog.state_key())
 

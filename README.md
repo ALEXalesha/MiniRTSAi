@@ -18,7 +18,10 @@ strategy tuned by league evolution, a tactical network and the interface.
 
 A 48 × 48 grid, one resource (crystals). The base trains workers and takes deliveries,
 the barracks trains swordsmen and archers, the tower shoots on its own. You win by
-destroying every enemy building. Three ready maps and a generator; every map is
+destroying every enemy building. If that has not happened in 20 minutes, the side with
+the more valuable surviving buildings wins (base 300, barracks 150, tower 120), then the
+more valuable army (swordsmen and archers), otherwise it is a draw. `tests/test_victory.py`
+checks it: a mirrored position is a draw, one extra building or soldier wins. Three ready maps and a generator; every map is
 symmetric under a 180° rotation.
 
 | Unit | HP | Cost | Ticks per cell | Range | Strong against |

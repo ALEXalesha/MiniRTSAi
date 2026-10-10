@@ -68,3 +68,13 @@ MUTANTS.append(
     ("sim: выбранный в тумане кристалл виден сразу", SIM,
      "        if pos not in self.crystals and not self.fog.sees(u.owner, *pos):",
      "        if False:", T_HON))
+MUTANTS += [
+    ("sim: очки без зданий", SIM,
+     "        if a[0] != b[0]:\n", "        if False:\n", "tests/test_victory.py"),
+    ("sim: рабочие в цене армии", SIM,
+     "if e.owner == owner and not e.building and e.kind in rules.COMBAT)",
+     "if e.owner == owner and not e.building)", "tests/test_victory.py"),
+    ("sim: по времени всегда ничья", SIM,
+     "            self.winner, self.end_reason = self.points_winner()",
+     "            self.winner, self.end_reason = None, \"draw\"", "tests/test_victory.py"),
+]
