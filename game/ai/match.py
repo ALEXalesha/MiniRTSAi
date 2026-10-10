@@ -58,20 +58,20 @@ class ApmLimiter:
 def play(gmap, controllers, seed=0, fog=True, think_every=5, apm=(None, None),
          max_ticks=rules.MAX_TICKS, meta=None, on_tick=None, stop=None, **game_kw):
     """Сыграть партию до конца. controllers - по одному на игрока; apm - лимит команд в
-    минуту на каждого (None - без лимита). Возвращает Recorder (партия и запись)."""
+    минуту на каждого (None - без лимита); think_every - число или по числу на игрока. Возвращает Recorder (партия и запись)."""
     rec = Recorder(gmap, seed=seed, fog=fog, max_ticks=max_ticks, meta=meta, **game_kw)
     g = rec.game
     for p, c in enumerate(controllers):
         c.reset(p, seed * 1009 + p)
     limiters = [ApmLimiter(a) if a else None for a in apm]
-    half = think_every // 2
+    every = list(think_every) if isinstance(think_every, (tuple, list)) else [think_every] * len(controllers)
     while not g.over:
         cmds = []
         for p, c in enumerate(controllers):
             lim = limiters[p]
             if lim is not None:
                 lim.tick()
-            if (g.tick + p * half) % think_every:
+            if (g.tick + p * (every[p] // 2)) % every[p]:
                 continue
             out = [x for x in c.decide(observe(g, p)) if x.player == p]
             if lim is not None:
