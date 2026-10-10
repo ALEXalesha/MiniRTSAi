@@ -40,8 +40,8 @@ PRESETS = {
     "defense": dict(workers=7, barracks_at=5, barracks=1, towers=2, tower_at=4, archers=0.7,
                     attack_at=16, retreat_at=6, scout_at=600),
     # экономика: много рабочих, армия поздно, но из двух казарм
-    "economy": dict(workers=16, barracks_at=14, barracks=2, towers=0, tower_at=99, archers=0.5,
-                    attack_at=12, retreat_at=5, scout_at=900),
+    "economy": dict(workers=16, barracks_at=14, barracks=3, towers=0, tower_at=99, archers=0.4,
+                    attack_at=18, retreat_at=8, scout_at=900),
 }
 
 
