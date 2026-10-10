@@ -1,0 +1,178 @@
+{
+ "version": "0.1.0",
+ "params": {
+  "workers": 20,
+  "barracks_at": 13,
+  "barracks": 3,
+  "towers": 0,
+  "tower_at": 20,
+  "archers": 0.3934547410459086,
+  "attack_at": 24,
+  "retreat_at": 12,
+  "scout_at": 1178
+ },
+ "generation": 15,
+ "training_minutes": 104.8,
+ "history": [
+  {
+   "gen": 0,
+   "best": 1.0,
+   "mean": 0.3,
+   "games": 60,
+   "seconds": 137.0,
+   "mean_minutes": 5.84
+  },
+  {
+   "gen": 1,
+   "best": 0.75,
+   "mean": 0.4375,
+   "games": 80,
+   "seconds": 325.3,
+   "mean_minutes": 8.33
+  },
+  {
+   "gen": 2,
+   "best": 0.7,
+   "mean": 0.41,
+   "games": 100,
+   "seconds": 340.3,
+   "mean_minutes": 7.85
+  },
+  {
+   "gen": 3,
+   "best": 0.75,
+   "mean": 0.4999999999999999,
+   "games": 120,
+   "seconds": 502.3,
+   "mean_minutes": 8.34
+  },
+  {
+   "gen": 4,
+   "best": 0.75,
+   "mean": 0.5666666666666667,
+   "games": 120,
+   "seconds": 515.1,
+   "mean_minutes": 8.02
+  },
+  {
+   "gen": 5,
+   "best": 0.75,
+   "mean": 0.4666666666666667,
+   "games": 120,
+   "seconds": 401.7,
+   "mean_minutes": 8.82
+  },
+  {
+   "gen": 6,
+   "best": 0.6666666666666666,
+   "mean": 0.45833333333333337,
+   "games": 120,
+   "seconds": 383.2,
+   "mean_minutes": 8.55
+  },
+  {
+   "gen": 7,
+   "best": 0.5833333333333334,
+   "mean": 0.5083333333333333,
+   "games": 120,
+   "seconds": 1038.4,
+   "mean_minutes": 8.64
+  },
+  {
+   "gen": 8,
+   "best": 0.6666666666666666,
+   "mean": 0.475,
+   "games": 120,
+   "seconds": 790.7,
+   "mean_minutes": 8.55
+  },
+  {
+   "gen": 9,
+   "best": 0.8333333333333334,
+   "mean": 0.55,
+   "games": 120,
+   "seconds": 305.7,
+   "mean_minutes": 8.4
+  },
+  {
+   "gen": 10,
+   "best": 0.5833333333333334,
+   "mean": 0.38333333333333336,
+   "games": 120,
+   "seconds": 433.4,
+   "mean_minutes": 8.45
+  },
+  {
+   "gen": 11,
+   "best": 0.5833333333333334,
+   "mean": 0.35833333333333334,
+   "games": 120,
+   "seconds": 317.4,
+   "mean_minutes": 8.32
+  },
+  {
+   "gen": 12,
+   "best": 0.75,
+   "mean": 0.5250000000000001,
+   "games": 120,
+   "seconds": 273.1,
+   "mean_minutes": 8.36
+  },
+  {
+   "gen": 13,
+   "best": 0.75,
+   "mean": 0.4916666666666667,
+   "games": 120,
+   "seconds": 270.7,
+   "mean_minutes": 8.15
+  },
+  {
+   "gen": 14,
+   "best": 0.6666666666666666,
+   "mean": 0.4583333333333333,
+   "games": 120,
+   "seconds": 255.1,
+   "mean_minutes": 8.14
+  }
+ ],
+ "passport_seed": 777,
+ "passport": {
+  "rush": {
+   "games": 30,
+   "wins": 4,
+   "draws": 0,
+   "losses": 26,
+   "score": 0.1333,
+   "results": "LLLLLLLLLLLLLLLLWLLLWLWLLLLLWL",
+   "mean_minutes": 4.22
+  },
+  "defense": {
+   "games": 30,
+   "wins": 29,
+   "draws": 0,
+   "losses": 1,
+   "score": 0.9667,
+   "results": "WWWWWWWWWWWWWWWWWWWWWWWWWWLWWW",
+   "mean_minutes": 10.55
+  },
+  "economy": {
+   "games": 30,
+   "wins": 28,
+   "draws": 0,
+   "losses": 2,
+   "score": 0.9333,
+   "results": "WWLWWWWWWWWWWWWWWLWWWWWWWWWWWW",
+   "mean_minutes": 8.0
+  },
+  "random": {
+   "games": 6,
+   "wins": 6,
+   "draws": 0,
+   "losses": 0,
+   "score": 1.0,
+   "results": "WWWWWW",
+   "mean_minutes": 5.08
+  }
+ },
+ "passport_minutes": 7.1
+}

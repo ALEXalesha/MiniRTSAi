@@ -45,10 +45,12 @@ def test_all_candidates_play_the_same_games():
     cands, _ = lg.candidates()
     jobs = lg.jobs(cands)
     per = {}
-    for ci, (c, opp, i, seed, kw) in jobs:
+    for ci, oi, (c, opp, i, seed, kw) in jobs:
         per.setdefault(ci, []).append((str(opp), i, seed))
     assert per[0] == per[1] == per[2]
     assert len(per[0]) == 3 * 2
+    lg.hall = [cands[0]]
+    assert len(lg.jobs(cands)) == 3 * (3 * 2 + lg.hall_games)
 
 
 def test_cem_moves_toward_better_region(tmp_path):
@@ -60,7 +62,7 @@ def test_cem_moves_toward_better_region(tmp_path):
     d1 = np.abs(lg.mu - to_unit(TARGET)).mean()
     assert d1 < d0 * 0.5
     assert last["mean"] > first["mean"]
-    assert len(lg.hall) == 3
+    assert len(lg.hall) == lg.hall_size
 
 
 def test_resume_continues_exactly(tmp_path):

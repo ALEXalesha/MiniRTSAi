@@ -21,10 +21,10 @@ import time  # noqa: E402
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="python -m game.train")
-    ap.add_argument("--run", default=os.path.join("runs", "league"))
+    ap.add_argument("--run", default=os.path.join("runs", "league2"))
     ap.add_argument("--gens", type=int, default=20, help="до какого поколения учить")
     ap.add_argument("--population", type=int, default=12)
-    ap.add_argument("--games", type=int, default=2, help="партий против каждого соперника")
+    ap.add_argument("--games", type=int, default=4, help="партий против каждого характера")
     ap.add_argument("--processes", type=int, default=2)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--resume", action="store_true")
@@ -53,8 +53,8 @@ def main(argv=None):
             lg = League(run, population=4, games_per_opponent=1, seed=args.seed)
             rec = lg.step(evaluate)
             per_game = rec["seconds"] / rec["games"]
-            # в полном поколении зал славы растёт до 3 соперников
-            games = args.population * args.games * 6
+            # в полном поколении: характеры по --games партий, два чемпиона по 2
+            games = args.population * (args.games * 3 + 2 * 2)
             total = per_game * games * args.gens
             print(f"пробное поколение: {rec['games']} партий за {rec['seconds']:.0f} с "
                   f"({per_game:.1f} с на партию при {args.processes} процессах)")
