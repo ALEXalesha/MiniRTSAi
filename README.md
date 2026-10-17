@@ -10,6 +10,9 @@
 
 </div>
 
+[![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
+Code, tests and docs are written by Claude (Anthropic) in Claude Code. Ideas, testing and decisions - Alexey.
+
 Work in progress: the simulation, pathfinding, fog of war with an honesty law and
 scripted bots are done (plan steps 1-5 in `docs/spec.md`). No window yet; next come a
 strategy tuned by league evolution, a tactical network and the interface.

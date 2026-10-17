@@ -10,6 +10,9 @@
 
 </div>
 
+[![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-D97757?logo=claude&logoColor=white)](https://claude.com/claude-code)
+Код, тесты и документация этого проекта написаны Claude (Anthropic) в Claude Code. Идеи, проверка и решения - Алексей.
+
 Идёт работа: готовы симуляция, поиск пути, туман войны с законом честности и скриптовые
 боты (шаги 1-5 плана из `docs/spec.md`). Окна пока нет, впереди - стратегия с эволюцией в
 лиге, тактическая сеть и интерфейс.
